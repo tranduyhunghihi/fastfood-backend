@@ -1,20 +1,10 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Tạo transporter lazy — đảm bảo dotenv đã load xong
-const getTransporter = () =>
-    nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASSWORD,
-        },
-    });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendOTPEmail = async (toEmail, otp) => {
-    const transporter = getTransporter();
-
-    await transporter.sendMail({
-        from: `"FastFoot" <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+        from: 'FastFoot <onboarding@resend.dev>',
         to: toEmail,
         subject: 'Mã xác nhận đăng ký tài khoản FastFoot',
         html: `
