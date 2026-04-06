@@ -87,6 +87,8 @@ export const verifyOtp = async (req, res) => {
 // @access  Public
 export const login = async (req, res) => {
     try {
+        console.log('BODY:', req.body);
+
         const { email, password } = req.body;
 
         if (!email || !password) {
