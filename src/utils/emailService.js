@@ -1,10 +1,10 @@
-import { Resend } from 'resend';
+import sgMail from '@sendgrid/mail';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export const sendOTPEmail = async (toEmail, otp) => {
-    await resend.emails.send({
-        from: 'FastFoot <onboarding@resend.dev>',
+    await sgMail.send({
+        from: process.env.SENDGRID_FROM_EMAIL,
         to: toEmail,
         subject: 'Mã xác nhận đăng ký tài khoản FastFoot',
         html: `
