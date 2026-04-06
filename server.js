@@ -30,7 +30,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
     cors: {
-        origin: ['http://localhost:3000', 'http://localhost:3001'],
+        origin: ['http://localhost:3000', 'http://localhost:3001', process.env.FRONTEND_URL],
         methods: ['GET', 'POST'],
     },
 });
@@ -38,7 +38,12 @@ const io = new Server(httpServer, {
 initSocket(io);
 
 app.use(express.json());
-app.use(cors());
+app.use(
+    cors({
+        origin: ['http://localhost:3000', 'http://localhost:3001', process.env.FRONTEND_URL],
+        credentials: true,
+    }),
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
