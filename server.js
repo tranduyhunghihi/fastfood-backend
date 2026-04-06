@@ -28,9 +28,16 @@ connectDB();
 const app = express();
 const httpServer = createServer(app);
 
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://fastfood-website-rho.vercel.app',
+    'https://fastfood-admin-sepia.vercel.app',
+];
+
 const io = new Server(httpServer, {
     cors: {
-        origin: ['http://localhost:3000', 'http://localhost:3001', process.env.FRONTEND_URL],
+        origin: allowedOrigins,
         methods: ['GET', 'POST'],
     },
 });
@@ -40,7 +47,7 @@ initSocket(io);
 app.use(express.json());
 app.use(
     cors({
-        origin: ['http://localhost:3000', 'http://localhost:3001', process.env.FRONTEND_URL],
+        origin: allowedOrigins,
         credentials: true,
     }),
 );
