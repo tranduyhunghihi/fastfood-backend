@@ -29,7 +29,9 @@ export const sendOtp = async (req, res) => {
 
         const otp = generateOTP();
         saveOTP(email, otp, { name, email, password });
+        console.log('📧 Sending OTP to:', email);
         await sendOTPEmail(email, otp);
+        console.log('✅ OTP sent successfully');
 
         res.json({ success: true, message: `Mã OTP đã được gửi đến ${email}. Vui lòng kiểm tra hộp thư.` });
     } catch (error) {
