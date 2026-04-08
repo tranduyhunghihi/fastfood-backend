@@ -32,17 +32,41 @@ export const createOrder = async (req, res) => {
         const comboMap = Object.fromEntries(combos.map((c) => [c._id.toString(), c]));
 
         // ── Kiểm tra nguyên liệu song song ──
-        const ingredientChecks = await Promise.all(
+        // Kiểm tra product trực tiếp
+        const productChecks = await Promise.all(
             items
                 .filter((i) => i.itemType === 'product')
-                .map((i) => checkIngredients(i.itemId, i.quantity).then((r) => ({ itemId: i.itemId, ...r }))),
+                .map((i) =>
+                    checkIngredients(i.itemId, i.quantity).then((r) => ({ itemId: i.itemId, type: 'product', ...r })),
+                ),
         );
+
+        // Kiểm tra product bên trong combo
+        const comboChecks = [];
+        for (const item of items.filter((i) => i.itemType === 'combo')) {
+            const combo = comboMap[item.itemId.toString()];
+            if (combo && combo.items && combo.items.length > 0) {
+                for (const comboItem of combo.items) {
+                    comboChecks.push(
+                        checkIngredients(comboItem.product.toString(), comboItem.quantity * item.quantity).then(
+                            (r) => ({ itemId: item.itemId, comboName: combo.name, type: 'combo', ...r }),
+                        ),
+                    );
+                }
+            }
+        }
+        const comboIngredientChecks = await Promise.all(comboChecks);
+
+        const ingredientChecks = [...productChecks, ...comboIngredientChecks];
         const failedIngredient = ingredientChecks.find((r) => !r.ok);
         if (failedIngredient) {
-            const p = productMap[failedIngredient.itemId.toString()];
+            const name =
+                failedIngredient.type === 'combo'
+                    ? failedIngredient.comboName
+                    : productMap[failedIngredient.itemId.toString()]?.name || 'Sản phẩm';
             return res.status(400).json({
                 success: false,
-                message: `"${p?.name || 'Sản phẩm'}" tạm thời hết hàng. Vui lòng chọn sản phẩm khác.`,
+                message: `"${name}" tạm thời hết hàng. Vui lòng chọn sản phẩm khác.`,
             });
         }
 
@@ -138,8 +162,22 @@ export const createOrder = async (req, res) => {
         const order = await Order.create(orderData);
 
         // Trừ nguyên liệu + cập nhật coupon song song
+        // Lấy các product trong combo để trừ nguyên liệu
+        const comboDeductions = [];
+        for (const item of orderItems.filter((i) => i.itemType === 'combo')) {
+            const combo = comboMap[item.itemId.toString()];
+            if (combo && combo.items && combo.items.length > 0) {
+                for (const comboItem of combo.items) {
+                    comboDeductions.push(
+                        deductIngredients(comboItem.product.toString(), comboItem.quantity * item.quantity),
+                    );
+                }
+            }
+        }
+
         await Promise.all([
             ...orderItems.filter((i) => i.itemType === 'product').map((i) => deductIngredients(i.itemId, i.quantity)),
+            ...comboDeductions,
             appliedCoupon
                 ? Coupon.findByIdAndUpdate(appliedCoupon._id, {
                       $inc: { usageCount: 1 },
